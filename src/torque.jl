@@ -1,6 +1,6 @@
 #export TorqueManager, launch
 
-import Base: launch, manage, kill, init_worker, connect
+#import Base: launch, manage, kill, init_worker, connect
 
 # Usage example and description:
 #   addprocs( TorqueManager(queue="normal", nodes=2, ppn=8) )
