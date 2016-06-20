@@ -78,7 +78,7 @@ function launch(manager::TorqueManager, params::Dict, instances_arr::Array, c::C
 
     # This qsub command will generate "ppn" julia processes on each node assigned by torque. The julia output (host and port information)
     # is redirected back to this processes via bash's /dev/tcp netowrk redirect mechanism.
-    (stdout, qsub_proc) = open( pipeline( `echo $(bash_command)`, qsub_command ) )
+    (stdout, qsub_proc) = open( pipeline( echo_command, qsub_command ) )
 
     println( "Starting job: ", chomp(readline(stdout)) )
 
@@ -104,6 +104,18 @@ function launch(manager::TorqueManager, params::Dict, instances_arr::Array, c::C
 end
 
 
+# The network_listener is kicked off just before qsub is run
+# it will listen for the STDOUT redirection from the workers.
+# Workers use a bash shell network redirect to send their host/port information
+# back to the master.
+#
+# Channels are used to communicate. This network listener is kept intentially simple.
+# Once it opens a port it communicates its open port # on channel_port (this will be
+# hard coded into the mini bash shell script that executes the julia worker process).
+#
+# Once the network listener receives worker communications it puts those raw strings
+# on the channel_workers channel and they're processed back in the launch function,
+# which listens on that channel until all workers have started.
 function network_listener(channel_port::Channel, channel_workers::Channel, expected_connections::Integer)
   server = nothing
   master_port = 9009
